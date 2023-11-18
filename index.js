@@ -176,43 +176,45 @@ async function main() {
     console.log(adjacencyData);
     // console.log(d3.extent(graphData.links, (d) => d.target));
 
+    const adjPlotTop = 40;
+    const adjPlotLeft = width / 2;
+    const adjPlotRight = 40;
+    const adjPlotBottom = 40;
     const adjPlot = adjacencyPlot()
         .width(width)
         .height(height)
         .data(adjacencyData)
-        // .margin({
-        //     top: 30,
-        //     right: width / 5,
-        //     bottom: 100,
-        //     left: (2 * width) / 5,
-        // })
         .margin({
-            top: 30,
-            right: 30,
-            bottom: 100,
-            left: 30,
+            top: adjPlotTop,
+            right: adjPlotRight,
+            bottom: adjPlotBottom,
+            left: adjPlotLeft,
         })
+        // .margin({
+        //     top: 40,
+        //     right: 40,
+        //     bottom: 100,
+        //     left: 40,
+        // })
         .xValue((d) => +d.source)
         .yValue((d) => +d.target)
-        .yAxisLabel("Embedding Dimension 2")
-        .xAxisLabel("Embedding Dimension 1")
-        .xDomain([0, 50])
-        .yDomain([0, 50])
+        .xDomain([0, 51])
+        .yDomain([0, 51])
         // .xDomain(d3.extent(graphData.links, (d) => d.source))
         // .yDomain(d3.extent(graphData.links, (d) => d.target))
         .colours(goodBadColours)
-        .colourValue((d) => +d.weight);
+        .colourValue((d) => 0);
 
     svg.call(adjPlot);
 
-    // const network = networkPlot()
-    //     .width((2 * width) / 5)
-    //     .height(height)
-    //     .colourValue((d) => d.degree)
-    //     .colours(goodBadColours)
-    //     .data(graphData);
+    const network = networkPlot()
+        .width((2 * width) / 5)
+        .height(height)
+        .colourValue((d) => 0)
+        .colours(goodBadColours)
+        .data(graphData);
 
-    // svg.call(network);
+    svg.call(network);
 
     function getNeighbours(node) {
         let neighbours = [];
@@ -247,11 +249,15 @@ async function main() {
         .style("opacity", 0)
         .style("position", "absolute");
 
+    const squareWidth = Math.abs(width - adjPlotLeft - adjPlotRight) / 51;
+    const squareHeight = Math.abs(height - adjPlotTop - adjPlotBottom) / 51;
+
     function interactivity() {
-        // svg.selectAll(".scatterPoints, .networkMarks")
-        svg.selectAll("circle")
+        // svg.selectAll(".adjPoints, .networkMarks")
+        svg.selectAll("circle, rect")
             .on("mouseover", function (event) {
-                // console.log(this);
+                console.log(this);
+                console.log(this.getAttribute("sourceId"));
 
                 // Show the tooltip with the data
                 tooltip
@@ -265,12 +271,22 @@ async function main() {
                     .style("top", event.pageY + 10 + "px");
 
                 d3.select(this).attr("r", 10);
+                // d3.select(this).attr("width", 100);
+                // d3.select(this).attr("height", 100);
 
-                d3.selectAll(".scatterPoints, .networkMarks")
+                d3.selectAll(".adjPoints, .networkMarks")
                     .attr("fill", (d) => {
-                        if (d.id == this.id) {
+                        if (
+                            d.id == this.id //||
+                            // d.id == this.getAttribute("sourceId") ||
+                            // d.id == this.getAttribute("targetId")
+                        ) {
                             return colours[4];
-                        } else if (getNeighbours(d).includes(this.__data__)) {
+                        } else if (
+                            getNeighbours(d).includes(this.__data__) ||
+                            d.id == this.getAttribute("sourceId") ||
+                            d.id == this.getAttribute("targetId")
+                        ) {
                             return "orchid";
                         } else {
                             return d.colour;
@@ -278,7 +294,11 @@ async function main() {
                         }
                     })
                     .attr("opacity", (d) => {
-                        if (d.id == this.id) {
+                        if (
+                            d.id == this.id ||
+                            d.id == this.getAttribute("sourceId") ||
+                            d.id == this.getAttribute("targetId")
+                        ) {
                             return 1;
                         } else if (getNeighbours(d).includes(this.__data__)) {
                             return 1;
@@ -288,7 +308,11 @@ async function main() {
                         }
                     })
                     .attr("r", (d) => {
-                        if (d.id == this.id) {
+                        if (
+                            d.id == this.id //||
+                            // d.id == this.getAttribute("sourceId") ||
+                            // d.id == this.getAttribute("targetId")
+                        ) {
                             return 10;
                         } else {
                             return 5;
@@ -297,6 +321,11 @@ async function main() {
 
                 d3.selectAll(".networkLinks").attr("stroke", (d) => {
                     if (d.source.id == this.id || d.target.id == this.id) {
+                        return "red";
+                    } else if (
+                        d.source.id == this.getAttribute("sourceId") &&
+                        d.target.id == this.getAttribute("targetId")
+                    ) {
                         return "red";
                     } else {
                         return d.colour;
@@ -315,8 +344,10 @@ async function main() {
                     });
 
                 d3.select(this).attr("r", 5).attr("stroke", "none");
+                // d3.select(this).attr("width", squareWidth);
+                // d3.select(this).attr("height", squareHeight);
 
-                d3.selectAll(".scatterPoints, .networkMarks")
+                d3.selectAll(".adjPoints, .networkMarks")
                     .attr("fill", (d) => {
                         return d.colour;
                     })

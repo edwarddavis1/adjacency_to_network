@@ -91,11 +91,11 @@ edge_list = sparse.find(A)
 edge_list = np.array(edge_list).T
 edge_list = pd.DataFrame(edge_list, columns=["source", "target", "weight"])
 
-# Add zero weight edges to edge list
-zero_weight_edges = np.array(np.where(A.todense() == 0)).T
-zero_weight_edges = pd.DataFrame(zero_weight_edges, columns=["source", "target"])
-zero_weight_edges["weight"] = 0
-edge_list = pd.concat([edge_list, zero_weight_edges], axis=0).reset_index(drop=True)
+# # Add zero weight edges to edge list
+# zero_weight_edges = np.array(np.where(A.todense() == 0)).T
+# zero_weight_edges = pd.DataFrame(zero_weight_edges, columns=["source", "target"])
+# zero_weight_edges["weight"] = 0
+# edge_list = pd.concat([edge_list, zero_weight_edges], axis=0).reset_index(drop=True)
 
 
 # Save as csv

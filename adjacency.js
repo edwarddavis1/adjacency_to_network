@@ -10,8 +10,6 @@ export const adjacencyPlot = () => {
     let colourValue;
     let xDomain;
     let yDomain;
-    let yAxisLabel;
-    let xAxisLabel;
     let colours;
 
     const my = (selection) => {
@@ -35,10 +33,60 @@ export const adjacencyPlot = () => {
             .domain(Object.keys(colours))
             .range(Object.values(colours));
 
+        // Add grid: vertical part
+        selection
+            .selectAll("g.grid_x")
+            .data([null])
+            .join("g")
+            .attr("class", "grid")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(
+                d3
+                    .axisBottom(x)
+                    .ticks(d3.max(xDomain))
+                    .tickSize(-(height - margin.top - margin.bottom))
+                    .tickFormat("")
+            )
+            .attr("opacity", 0.2);
+
+        // Horizontal grid part
+        selection
+            .selectAll("g.grid_y")
+            .data([null])
+            .join("g")
+            .attr("class", "grid")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(
+                d3
+                    .axisLeft(y)
+                    .ticks(d3.max(yDomain))
+                    .tickSize(-(width - margin.left - margin.right))
+                    .tickFormat("")
+            )
+            .attr("opacity", 0.2);
+
+        // Diagonal part
+        selection
+            .selectAll("g.grid_diag")
+            .data([[d3.max(xDomain), d3.max(yDomain)]])
+            .join("line")
+            .attr("class", "grid")
+            .attr("x1", x(0))
+            .attr("y1", y(0))
+            .attr("x2", (d) => x(d[0]))
+            .attr("y2", (d) => y(d[1]))
+            .attr("stroke", "black")
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", "5,5")
+            .attr("opacity", 0.5);
+
         const marks = data.map((d) => ({
             x: x(xValue(d)),
-            y: y(yValue(d)),
+            y: y(yValue(d) + 1), // The squares a placed below the x-axis at y=0. The +1 shifts this above
             weight: d.weight,
+            source: d.source,
+            target: d.target,
+            id: `${d.source}-${d.target}`,
             // if string, use colourScaleDisc
             // if number, use colourScale
             colour:
@@ -47,28 +95,30 @@ export const adjacencyPlot = () => {
                     : colourScale(colourValue(d)),
         }));
 
-        console.log("here");
-        console.log(d3.extent(marks, (d) => d.x));
-        console.log(d3.extent(marks, (d) => d.y));
-        console.log(marks);
-
         const myTransition = d3.transition().duration(200);
 
+        // const squareWidth = width / (d3.max(xDomain) + 5);
+        const squareWidth =
+            Math.abs(width - margin.left - margin.right) / d3.max(xDomain);
+        const squareHeight =
+            Math.abs(height - margin.top - margin.bottom) / d3.max(yDomain);
+
         const nodes = selection
-            .selectAll(".scatterPoints")
+            .selectAll(".adjPoints")
             .data(marks)
             .join(
                 (enter) =>
                     enter
                         .append("rect")
-                        .attr("r", 5)
-                        .style("opacity", 1)
-                        .attr("cx", (3 * width) / 4)
-                        .attr("cy", height / 2)
+                        // .attr("width", 0)
+                        // .attr("height", 0)
+                        .style("opacity", 0)
+                        .attr("x", (3 * width) / 4)
+                        .attr("y", height / 2)
                         .call((enter) =>
                             enter
                                 .transition(myTransition)
-                                .delay((d, i) => i * 0)
+                                .delay((d, i) => i * 5)
                         ),
                 (update) =>
                     update.call((update) =>
@@ -78,11 +128,13 @@ export const adjacencyPlot = () => {
             .transition(myTransition)
             .attr("x", (d) => d.x)
             .attr("y", (d) => d.y)
+            .attr("sourceId", (d) => d.source)
+            .attr("targetId", (d) => d.target)
             .attr("id", (d) => d.id)
-            .style("opacity", 1)
-            .attr("class", "scatterPoints")
-            .attr("width", 10)
-            .attr("height", 10)
+            .style("opacity", (d) => d.weight)
+            .attr("class", "adjPoints")
+            .attr("width", squareWidth)
+            .attr("height", squareHeight)
             .attr("name", (d) => d.name)
             .attr("weight", (d) => d.weight)
             .attr("house", (d) => d.house)
@@ -96,7 +148,7 @@ export const adjacencyPlot = () => {
         //     .join("g")
         //     .attr("class", "x-axis")
         //     .attr("transform", `translate(0,${height - margin.bottom})`)
-        //     .call(d3.axisBottom(x).tickFormat(""));
+        //     .call(d3.axisBottom(x).tickFormat("").ticks(d3.max(xDomain)));
         // // Remove ticks and tick labels by setting tickSize to 0 and tickFormat to an empty string
 
         // selection
@@ -106,33 +158,9 @@ export const adjacencyPlot = () => {
         //     .attr("class", "y-axis")
         //     .attr("transform", `translate(${margin.left},0)`)
         //     .call(d3.axisLeft(y).tickFormat(""));
-        // // Remove ticks and tick labels by setting tickSize to 0 and tickFormat to an empty string
+        // Remove ticks and tick labels by setting tickSize to 0 and tickFormat to an empty string
 
-        // // Y axis label:
-        // selection
-        //     .selectAll(".yAxisLabel")
-        //     .data([null])
-        //     .join("text")
-        //     .attr("text-anchor", "middle")
-        //     .attr("x", margin.left - 20)
-        //     .attr("y", height / 2 - margin.top)
-        //     .attr("class", "yAxisLabel") // This ensures that multiple labels don't plot when animating
-        //     .attr(
-        //         "transform",
-        //         `rotate(-90 ${margin.left - 20}, ${height / 2 - margin.top})`
-        //     )
-        //     .text(yAxisLabel);
-
-        // // X axis label:
-        // selection
-        //     .selectAll(".xAxisLabel")
-        //     .data([null])
-        //     .join("text")
-        //     .attr("text-anchor", "middle")
-        //     .attr("x", margin.left + (width - margin.left - margin.right) / 2)
-        //     .attr("y", margin.top + height - margin.top - margin.bottom + 20)
-        //     .attr("class", "xAxisLabel") // This ensures that multiple labels don't plot when animating
-        //     .text(xAxisLabel);
+        // Add tick labels
     };
 
     my.width = function (_) {
@@ -164,12 +192,6 @@ export const adjacencyPlot = () => {
     };
     my.yDomain = function (_) {
         return arguments.length ? ((yDomain = _), my) : yDomain;
-    };
-    my.yAxisLabel = function (_) {
-        return arguments.length ? ((yAxisLabel = _), my) : yAxisLabel;
-    };
-    my.xAxisLabel = function (_) {
-        return arguments.length ? ((xAxisLabel = _), my) : xAxisLabel;
     };
     my.colours = function (_) {
         return arguments.length ? ((colours = _), my) : colours;
